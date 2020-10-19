@@ -12,7 +12,9 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.H2Dialect;
 
+import org.hibernate.testing.RequiresDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.junit4.BaseNonConfigCoreFunctionalTestCase;
 import org.junit.Test;
@@ -22,6 +24,11 @@ import org.junit.Test;
  * @author Nathan Xu
  */
 @TestForIssue( jiraKey = "HHH-14234" )
+@RequiresDialect(
+		value = H2Dialect.class,
+		comment = "This test relies on 'hibernate.hbm2ddl.halt_on_error', only tested on h2; " +
+				"other dialects might be broken due to irrelevant reason (e.g. not supporting 'if exists' while dropping tables)."
+)
 public class DenormalizedTablePhysicalIncludedTableConstraintTest extends BaseNonConfigCoreFunctionalTestCase {
 
 	@Override
@@ -39,14 +46,13 @@ public class DenormalizedTablePhysicalIncludedTableConstraintTest extends BaseNo
 
 	@Test
 	public void testUniqueConstraintFromSupTableNotAppliedToSubTable() {
-		// Unique constraint should be unique in db
+		// Unique constraint should be unique in h2 db
 		// Without fixing, exception will be thrown when unique constraint in 'SUPTABLE' is applied to 'SUBTABLE' as well
-		// Both table names are uppercase to accommodate HANA dialect (see https://stackoverflow.com/questions/29974507/sap-hana-invalid-table-name)
 	}
 
 	@Entity(name = "SuperClass")
 	@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-	@Table( name = "SUPTABLE",
+	@Table( name = "supTable",
 			uniqueConstraints = {
 					@UniqueConstraint(  name = "UK",
 							columnNames = {"colOne", "colTwo"})
@@ -66,7 +72,7 @@ public class DenormalizedTablePhysicalIncludedTableConstraintTest extends BaseNo
 	}
 
 	@Entity(name = "SubClass")
-	@Table( name = "SUBTABLE" )
+	@Table( name = "subTable" )
 	static class SubClass extends SuperClass {
 
 		@Column(name = "colThree")
